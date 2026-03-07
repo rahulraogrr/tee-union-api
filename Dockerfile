@@ -18,6 +18,7 @@ RUN npm ci
 
 # Copy source and compile
 COPY . .
+RUN npx prisma generate
 RUN npm run build
 
 # Prune devDependencies so the runner stage gets a lean node_modules
