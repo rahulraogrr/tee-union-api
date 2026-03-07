@@ -1,0 +1,55 @@
+# =============================================================================
+#  TEE 1104 Union API — Local Development Stack
+#  Usage:
+#    Start fresh:   docker compose up -d
+#    Stop:          docker compose down
+#    Logs:          docker compose logs -f redis
+#    Wipe & reset:  docker compose down -v  (then docker compose up -d)
+# =============================================================================
+
+services:
+
+  # ── PostgreSQL ────────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: tee_union_postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # SQL scripts run automatically on first start, in filename order
+      - ../tee_1104_union_schema_v6.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ../tee_1104_union_notification_migration.sql:/docker-entrypoint-initdb.d/02_notification_migration.sql:ro
+      - ../tee_1104_union_seed.sql:/docker-entrypoint-initdb.d/03_seed.sql:ro
+      - ../tee_1104_union_seed_admin.sql:/docker-entrypoint-initdb.d/04_seed_admin.sql:ro
+      - ../tee_1104_union_seed_pilot.sql:/docker-entrypoint-initdb.d/05_seed_pilot.sql:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis (BullMQ notification queue) ────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: tee_union_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  postgres_data:
+  redis_data:
