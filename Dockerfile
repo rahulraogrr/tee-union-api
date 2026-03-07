@@ -38,9 +38,7 @@ COPY --from=builder --chown=appuser:appgroup /app/dist          ./dist
 COPY --from=builder --chown=appuser:appgroup /app/node_modules  ./node_modules
 COPY --from=builder --chown=appuser:appgroup /app/package.json  ./package.json
 COPY --from=builder --chown=appuser:appgroup /app/prisma        ./prisma
-# NOTE: prisma.config.ts is intentionally NOT copied — Prisma 7 requires
-# datasource.url in the config file if it exists, but schema.prisma already
-# has url = env("DATABASE_URL") which Railway injects directly.
+COPY --from=builder --chown=appuser:appgroup /app/prisma.config.ts ./prisma.config.ts
 
 USER appuser
 
