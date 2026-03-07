@@ -1,10 +1,14 @@
 import { defineConfig } from 'prisma/config';
 
-// DATABASE_URL is read from schema.prisma via env("DATABASE_URL").
-// Railway injects it as a real env var — no dotenv needed in production.
+// process.env.DATABASE_URL is injected by Railway at runtime.
+// No dotenv needed — this works both locally (if DATABASE_URL is set in shell)
+// and in production (Railway injects it as an env var).
 export default defineConfig({
   schema: 'prisma/schema.prisma',
   migrations: {
     path: 'prisma/migrations',
+  },
+  datasource: {
+    url: process.env.DATABASE_URL!,
   },
 });
