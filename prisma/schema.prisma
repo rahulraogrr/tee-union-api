@@ -12,6 +12,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ---------------------------------------------------------------------------
@@ -253,22 +254,22 @@ model User {
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @default(now()) @map("updated_at")
 
-  createdBy              User?                      @relation("UserCreatedBy", fields: [createdById], references: [id])
-  createdUsers           User[]                     @relation("UserCreatedBy")
-  staffProfile           StaffProfile?
-  member                 Member?
-  repAssignments         RepAssignment[]
-  assignedTickets        Ticket[]                   @relation("AssignedRep")
-  zonalTickets           Ticket[]                   @relation("AssignedZonalOfficer")
-  ticketComments         TicketComment[]
-  statusChanges          TicketStatusHistory[]
-  notifications          Notification[]
-  pushTokens             PushToken[]
-  publishedNews          News[]
-  createdEvents          Event[]
-  auditLogs              AuditLog[]
-  designationChanges     MemberDesignationHistory[]
-  telegramLinkTokens     TelegramLinkToken[]
+  createdBy          User?                      @relation("UserCreatedBy", fields: [createdById], references: [id])
+  createdUsers       User[]                     @relation("UserCreatedBy")
+  staffProfile       StaffProfile?
+  member             Member?
+  repAssignments     RepAssignment[]
+  assignedTickets    Ticket[]                   @relation("AssignedRep")
+  zonalTickets       Ticket[]                   @relation("AssignedZonalOfficer")
+  ticketComments     TicketComment[]
+  statusChanges      TicketStatusHistory[]
+  notifications      Notification[]
+  pushTokens         PushToken[]
+  publishedNews      News[]
+  createdEvents      Event[]
+  auditLogs          AuditLog[]
+  designationChanges MemberDesignationHistory[]
+  telegramLinkTokens TelegramLinkToken[]
 
   @@index([employeeId])
   @@index([role])
@@ -420,12 +421,12 @@ model Ticket {
   createdAt              DateTime       @default(now()) @map("created_at")
   updatedAt              DateTime       @default(now()) @map("updated_at")
 
-  member               Member               @relation(fields: [memberId], references: [id])
-  assignedRep          User?                @relation("AssignedRep", fields: [assignedRepId], references: [id])
-  assignedZonalOfficer User?                @relation("AssignedZonalOfficer", fields: [assignedZonalOfficerId], references: [id])
-  category             TicketCategory?      @relation(fields: [categoryId], references: [id])
-  district             District?            @relation(fields: [districtId], references: [id])
-  workUnit             WorkUnit?            @relation(fields: [workUnitId], references: [id])
+  member               Member                @relation(fields: [memberId], references: [id])
+  assignedRep          User?                 @relation("AssignedRep", fields: [assignedRepId], references: [id])
+  assignedZonalOfficer User?                 @relation("AssignedZonalOfficer", fields: [assignedZonalOfficerId], references: [id])
+  category             TicketCategory?       @relation(fields: [categoryId], references: [id])
+  district             District?             @relation(fields: [districtId], references: [id])
+  workUnit             WorkUnit?             @relation(fields: [workUnitId], references: [id])
   comments             TicketComment[]
   statusHistory        TicketStatusHistory[]
 
@@ -494,20 +495,20 @@ model News {
 }
 
 model Event {
-  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  titleEn       String    @map("title_en") @db.VarChar(250)
-  titleTe       String?   @map("title_te") @db.VarChar(250)
-  descriptionEn String?   @map("description_en") @db.Text
-  descriptionTe String?   @map("description_te") @db.Text
-  eventDate     DateTime  @map("event_date")
-  location      String?   @db.VarChar(300)
-  maxCapacity   Int?      @map("max_capacity")
-  isVirtual     Boolean   @default(false) @map("is_virtual")
-  districtId    String?   @map("district_id") @db.Uuid
-  createdById   String?   @map("created_by") @db.Uuid
-  isPublished   Boolean   @default(false) @map("is_published")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @default(now()) @map("updated_at")
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  titleEn       String   @map("title_en") @db.VarChar(250)
+  titleTe       String?  @map("title_te") @db.VarChar(250)
+  descriptionEn String?  @map("description_en") @db.Text
+  descriptionTe String?  @map("description_te") @db.Text
+  eventDate     DateTime @map("event_date")
+  location      String?  @db.VarChar(300)
+  maxCapacity   Int?     @map("max_capacity")
+  isVirtual     Boolean  @default(false) @map("is_virtual")
+  districtId    String?  @map("district_id") @db.Uuid
+  createdById   String?  @map("created_by") @db.Uuid
+  isPublished   Boolean  @default(false) @map("is_published")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @map("updated_at")
 
   district      District?           @relation(fields: [districtId], references: [id])
   createdBy     User?               @relation(fields: [createdById], references: [id])
@@ -552,7 +553,7 @@ model Notification {
   isCritical   Boolean          @default(false) @map("is_critical")
   isUrgent     Boolean          @default(false) @map("is_urgent")
 
-  user User                  @relation(fields: [userId], references: [id])
+  user User              @relation(fields: [userId], references: [id])
   jobs NotificationJob[]
 
   @@index([userId, isRead])
