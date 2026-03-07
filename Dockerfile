@@ -34,10 +34,11 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 WORKDIR /app
 
 # Copy compiled output and production node_modules from builder
-COPY --from=builder --chown=appuser:appgroup /app/dist          ./dist
-COPY --from=builder --chown=appuser:appgroup /app/node_modules  ./node_modules
-COPY --from=builder --chown=appuser:appgroup /app/package.json  ./package.json
-COPY --from=builder --chown=appuser:appgroup /app/prisma        ./prisma
+COPY --from=builder --chown=appuser:appgroup /app/dist             ./dist
+COPY --from=builder --chown=appuser:appgroup /app/node_modules     ./node_modules
+COPY --from=builder --chown=appuser:appgroup /app/package.json     ./package.json
+COPY --from=builder --chown=appuser:appgroup /app/prisma           ./prisma
+COPY --from=builder --chown=appuser:appgroup /app/prisma.config.ts ./prisma.config.ts
 
 USER appuser
 
