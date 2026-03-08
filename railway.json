@@ -4,7 +4,7 @@
     "builder": "DOCKERFILE"
   },
   "deploy": {
-    "startCommand": "node dist/main",
+    "startCommand": "node -e \"console.log('ENV KEYS:', Object.keys(process.env).join(', '))\" && node dist/main",
     "healthcheckPath": "/api/v1/health/ready",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
