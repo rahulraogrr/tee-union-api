@@ -4,7 +4,7 @@
     "builder": "DOCKERFILE"
   },
   "deploy": {
-    "startCommand": "echo DB_SET=${DATABASE_URL:+yes} JWT_SET=${JWT_SECRET:+yes} NODE_ENV=$NODE_ENV && node dist/main",
+    "startCommand": "node dist/main",
     "healthcheckPath": "/api/v1/health/ready",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",

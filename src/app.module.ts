@@ -24,35 +24,37 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 /** Joi schema — validates required env vars at startup; fails fast if anything is missing. */
 const envValidationSchema = Joi.object({
-  NODE_ENV:     Joi.string().valid('development', 'production', 'test').default('development'),
-  PORT:         Joi.number().default(3000),
+  NODE_ENV: Joi.string()
+    .valid('development', 'production', 'test')
+    .default('development'),
+  PORT: Joi.number().default(3000),
 
   // Database — required
   DATABASE_URL: Joi.string().required(),
 
   // JWT — required
-  JWT_SECRET:   Joi.string().min(32).required(),
+  JWT_SECRET: Joi.string().min(32).required(),
 
   // Redis — optional (app degrades gracefully without it)
-  REDIS_HOST:   Joi.string().default('localhost'),
-  REDIS_PORT:   Joi.number().default(6379),
+  REDIS_HOST: Joi.string().default('localhost'),
+  REDIS_PORT: Joi.number().default(6379),
   REDIS_PASSWORD: Joi.string().optional().allow(''),
 
   // CORS — optional
   CORS_ORIGINS: Joi.string().optional().allow(''),
 
   // FCM — all three must be present together, or all absent
-  FCM_PROJECT_ID:    Joi.string().optional().allow(''),
-  FCM_CLIENT_EMAIL:  Joi.string().optional().allow(''),
-  FCM_PRIVATE_KEY:   Joi.string().optional().allow(''),
+  FCM_PROJECT_ID: Joi.string().optional().allow(''),
+  FCM_CLIENT_EMAIL: Joi.string().optional().allow(''),
+  FCM_PRIVATE_KEY: Joi.string().optional().allow(''),
 
   // Telegram — optional
-  TELEGRAM_BOT_TOKEN:      Joi.string().optional().allow(''),
+  TELEGRAM_BOT_TOKEN: Joi.string().optional().allow(''),
   TELEGRAM_WEBHOOK_SECRET: Joi.string().optional().allow(''),
 
   // AWS SNS — optional
-  AWS_REGION:            Joi.string().optional().allow(''),
-  AWS_ACCESS_KEY_ID:     Joi.string().optional().allow(''),
+  AWS_REGION: Joi.string().optional().allow(''),
+  AWS_ACCESS_KEY_ID: Joi.string().optional().allow(''),
   AWS_SECRET_ACCESS_KEY: Joi.string().optional().allow(''),
 });
 
@@ -61,15 +63,14 @@ const envValidationSchema = Joi.object({
     // Config with Joi schema validation — throws on startup if required vars are missing
     ConfigModule.forRoot({
       isGlobal: true,
+      ignoreEnvFile: true,
       validationSchema: envValidationSchema,
       validationOptions: { abortEarly: false },
     }),
 
     // Rate limiting — global defaults; tightened on /auth/login via @Throttle()
     // 60 requests per 60 seconds per IP (1 req/s burst budget)
-    ThrottlerModule.forRoot([
-      { name: 'global', ttl: 60_000, limit: 60 },
-    ]),
+    ThrottlerModule.forRoot([{ name: 'global', ttl: 60_000, limit: 60 }]),
 
     // Bull / Redis — used by notification queue
     // enableReadyCheck: false + lazyConnect: true mean the app starts
