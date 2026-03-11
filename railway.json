@@ -4,7 +4,7 @@
     "builder": "DOCKERFILE"
   },
   "deploy": {
-    "startCommand": "node -e \"console.log('DB_LEN:', (process.env.DATABASE_URL||'').length, 'JWT_LEN:', (process.env.JWT_SECRET||'').length, 'DB_START:', (process.env.DATABASE_URL||'').substring(0,10))\" && node dist/main",
+    "startCommand": "node dist/main",
     "healthcheckPath": "/api/v1/health/ready",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
