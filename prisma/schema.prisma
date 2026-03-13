@@ -111,6 +111,7 @@ model Union {
   updatedAt          DateTime  @default(now()) @map("updated_at")
 
   defaultLanguage Language? @relation(fields: [defaultLanguageId], references: [id])
+  members         Member[]
 
   @@map("t_union")
 }
@@ -308,6 +309,7 @@ model Designation {
 model Member {
   id                      String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId                  String             @unique @map("user_id") @db.Uuid
+  unionId                 String             @map("union_id") @db.Uuid
   employeeId              String             @map("employee_id") @db.VarChar(50)
   employerId              String             @map("employer_id") @db.Uuid
   designationId           String             @map("designation_id") @db.Uuid
@@ -327,6 +329,7 @@ model Member {
   updatedAt               DateTime           @default(now()) @map("updated_at")
 
   user                       User                       @relation(fields: [userId], references: [id])
+  union                      Union                      @relation(fields: [unionId], references: [id])
   employer                   Employer                   @relation(fields: [employerId], references: [id])
   designation                Designation                @relation(fields: [designationId], references: [id])
   district                   District                   @relation(fields: [districtId], references: [id])
@@ -335,6 +338,7 @@ model Member {
   eventRegistrations         EventRegistration[]
   memberDesignationHistories MemberDesignationHistory[]
 
+  @@index([unionId])
   @@index([districtId])
   @@index([workUnitId])
   @@index([employerId])

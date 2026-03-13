@@ -25,6 +25,7 @@ export class MembersService {
     const member = await this.prisma.member.findUnique({
       where: { userId },
       include: {
+        union: { select: { id: true, name: true, shortName: true } },
         employer: { select: { id: true, name: true, shortName: true } },
         designation: { select: { id: true, name: true } },
         district: { select: { id: true, name: true } },
