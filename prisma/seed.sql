@@ -17,8 +17,8 @@ INSERT INTO t_union (
 )
 VALUES (
   gen_random_uuid(),
-  'Telangana Electricity Employees Union 1104',
-  'TEE 1104',
+  'Telangana Electricity Employees 1104'' Union',
+  'TEE 1104'' UNION',
   'A registered trade union representing electricity employees across Telangana state under TSGENCO, TSTRANSCO, TSSPDCL and TSNPDCL.',
   'Trade Union',
   '1104',
@@ -182,7 +182,7 @@ INSERT INTO t_members (
 SELECT
   gen_random_uuid(),
   u.id,
-  (SELECT id FROM t_union WHERE short_name = 'TEE 1104'),
+  (SELECT id FROM t_union WHERE short_name = 'TEE 1104'' UNION'),
   u.employee_id,
   (SELECT id FROM t_employers WHERE short_name = 'TSSPDCL'),
   (SELECT id FROM t_designations WHERE name = 'Lineman'),
@@ -207,7 +207,7 @@ INSERT INTO t_members (
 SELECT
   gen_random_uuid(),
   u.id,
-  (SELECT id FROM t_union WHERE short_name = 'TEE 1104'),
+  (SELECT id FROM t_union WHERE short_name = 'TEE 1104'' UNION'),
   u.employee_id,
   (SELECT id FROM t_employers WHERE short_name = 'TSNPDCL'),
   (SELECT id FROM t_designations WHERE name = 'Junior Engineer'),
@@ -232,7 +232,7 @@ INSERT INTO t_members (
 SELECT
   gen_random_uuid(),
   u.id,
-  (SELECT id FROM t_union WHERE short_name = 'TEE 1104'),
+  (SELECT id FROM t_union WHERE short_name = 'TEE 1104'' UNION'),
   u.employee_id,
   (SELECT id FROM t_employers WHERE short_name = 'TSTRANSCO'),
   (SELECT id FROM t_designations WHERE name = 'Assistant Engineer'),
@@ -257,7 +257,7 @@ INSERT INTO t_members (
 SELECT
   gen_random_uuid(),
   u.id,
-  (SELECT id FROM t_union WHERE short_name = 'TEE 1104'),
+  (SELECT id FROM t_union WHERE short_name = 'TEE 1104'' UNION'),
   u.employee_id,
   (SELECT id FROM t_employers WHERE short_name = 'TSGENCO'),
   (SELECT id FROM t_designations WHERE name = 'Sub Engineer'),
@@ -282,7 +282,7 @@ INSERT INTO t_members (
 SELECT
   gen_random_uuid(),
   u.id,
-  (SELECT id FROM t_union WHERE short_name = 'TEE 1104'),
+  (SELECT id FROM t_union WHERE short_name = 'TEE 1104'' UNION'),
   u.employee_id,
   (SELECT id FROM t_employers WHERE short_name = 'TSGENCO'),
   (SELECT id FROM t_designations WHERE name = 'Assistant Engineer'),
