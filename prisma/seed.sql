@@ -297,7 +297,19 @@ WHERE u.employee_id = 'EMP-SUPERADMIN'
 ON CONFLICT (user_id) DO NOTHING;
 
 -- -----------------------------------------------------------------------------
--- 7. VERIFY — run these SELECTs to confirm everything was inserted
+-- 7. TICKET CATEGORIES
+-- -----------------------------------------------------------------------------
+
+INSERT INTO t_ticket_categories (id, name, is_active) VALUES
+  ('a1000000-0000-0000-0000-000000000001', 'Salary',          true),
+  ('a1000000-0000-0000-0000-000000000002', 'Provident Fund',  true),
+  ('a1000000-0000-0000-0000-000000000003', 'Transfer',        true),
+  ('a1000000-0000-0000-0000-000000000004', 'Medical',         true),
+  ('a1000000-0000-0000-0000-000000000005', 'Other',           true)
+ON CONFLICT (id) DO NOTHING;
+
+-- -----------------------------------------------------------------------------
+-- 8. VERIFY — run these SELECTs to confirm everything was inserted
 -- -----------------------------------------------------------------------------
 
 SELECT 'districts'  AS table_name, COUNT(*) AS row_count FROM t_districts
