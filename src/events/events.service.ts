@@ -24,6 +24,9 @@ export class EventsService {
   async findAll(districtId?: string, page = 1, requestedLimit = 20) {
     const limit = clampLimit(requestedLimit);
     const skip = (page - 1) * limit;
+    this.logger.debug(
+      `Listing events — districtId: ${districtId ?? 'all'}, page: ${page}, limit: ${limit}`,
+    );
     const where = {
       isPublished: true,
       eventDate: { gte: new Date() },
@@ -48,6 +51,7 @@ export class EventsService {
       this.prisma.event.count({ where }),
     ]);
 
+    this.logger.debug(`Events listed — total: ${total}, returned: ${data.length}`);
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
@@ -58,6 +62,7 @@ export class EventsService {
    * @throws NotFoundException when the event does not exist or is not published
    */
   async findOne(id: string) {
+    this.logger.debug(`Fetching event — id: ${id}`);
     const event = await this.prisma.event.findFirst({
       where: { id, isPublished: true },
       include: {
@@ -65,7 +70,10 @@ export class EventsService {
         _count: { select: { registrations: true } },
       },
     });
-    if (!event) throw new NotFoundException('Event not found');
+    if (!event) {
+      this.logger.warn(`Event not found or not published — id: ${id}`);
+      throw new NotFoundException('Event not found');
+    }
     return event;
   }
 
@@ -79,17 +87,25 @@ export class EventsService {
    * @throws ConflictException  when already registered or event is at full capacity
    */
   async register(eventId: string, userId: string) {
+    this.logger.debug(`Event registration attempt — eventId: ${eventId}, userId: ${userId}`);
+
     const member = await this.prisma.member.findUnique({
       where: { userId },
       select: { id: true },
     });
-    if (!member) throw new NotFoundException('Member profile not found');
+    if (!member) {
+      this.logger.warn(`Event registration failed — member not found for userId: ${userId}`);
+      throw new NotFoundException('Member profile not found');
+    }
 
     const event = await this.prisma.event.findUniqueOrThrow({ where: { id: eventId } });
 
     if (event.maxCapacity) {
       const count = await this.prisma.eventRegistration.count({ where: { eventId } });
       if (count >= event.maxCapacity) {
+        this.logger.warn(
+          `Event registration blocked — eventId: ${eventId} at capacity (${count}/${event.maxCapacity}), userId: ${userId}`,
+        );
         throw new ConflictException('Event is at full capacity');
       }
     }
@@ -110,6 +126,9 @@ export class EventsService {
 
       return registration;
     } catch {
+      this.logger.warn(
+        `Event registration conflict — userId: ${userId} already registered for eventId: ${eventId}`,
+      );
       throw new ConflictException('You are already registered for this event');
     }
   }

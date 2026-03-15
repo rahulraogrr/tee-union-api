@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
@@ -6,6 +6,8 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
+  private readonly logger = new Logger(JwtStrategy.name);
+
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
@@ -29,7 +31,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       },
     });
 
-    if (!user || !user.isActive) {
+    if (!user) {
+      this.logger.warn(`JWT rejected — user not found for sub: ${payload.sub}`);
+      throw new UnauthorizedException('Account is inactive or not found');
+    }
+
+    if (!user.isActive) {
+      this.logger.warn(`JWT rejected — inactive account: ${user.employeeId} (id: ${user.id})`);
       throw new UnauthorizedException('Account is inactive or not found');
     }
 

@@ -88,10 +88,19 @@ async function bootstrap() {
 
   // ── Start server ───────────────────────────────────────────────────────────
   const port = process.env.PORT ?? 3000;
+  const env  = process.env.NODE_ENV ?? 'development';
   await app.listen(port);
 
   logger.log(`TEE 1104 Union API  →  http://localhost:${port}/api/v1`);
   logger.log(`Swagger docs        →  http://localhost:${port}/api/docs`);
+  logger.log(`Environment         →  ${env}`);
+  logger.log(`CORS origins        →  ${process.env.CORS_ORIGINS ?? '*'}`);
+  logger.log(
+    `Integrations        →  ` +
+    `FCM: ${process.env.FCM_PROJECT_ID ? '✅' : '⚠️ disabled'}  ` +
+    `Telegram: ${process.env.TELEGRAM_BOT_TOKEN ? '✅' : '⚠️ disabled'}  ` +
+    `SMS: ${process.env.AWS_ACCESS_KEY_ID ? '✅' : '⚠️ disabled'}`,
+  );
 }
 
 bootstrap();

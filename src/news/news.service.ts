@@ -22,6 +22,7 @@ export class NewsService {
   async findAll(page = 1, requestedLimit = 20) {
     const limit = clampLimit(requestedLimit);
     const skip = (page - 1) * limit;
+    this.logger.debug(`Listing news — page: ${page}, limit: ${limit}`);
     const [data, total] = await this.prisma.$transaction([
       this.prisma.news.findMany({
         where: { isPublished: true },
@@ -35,6 +36,7 @@ export class NewsService {
       }),
       this.prisma.news.count({ where: { isPublished: true } }),
     ]);
+    this.logger.debug(`News listed — total: ${total}, returned: ${data.length}`);
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
@@ -45,10 +47,14 @@ export class NewsService {
    * @throws NotFoundException when the article does not exist or is not yet published
    */
   async findOne(id: string) {
+    this.logger.debug(`Fetching news article — id: ${id}`);
     const news = await this.prisma.news.findFirst({
       where: { id, isPublished: true },
     });
-    if (!news) throw new NotFoundException('News article not found');
+    if (!news) {
+      this.logger.warn(`News article not found or not published — id: ${id}`);
+      throw new NotFoundException('News article not found');
+    }
     return news;
   }
 

@@ -22,6 +22,10 @@ export class NotificationsService {
     const limit = clampLimit(options.limit);
     const skip = (page - 1) * limit;
 
+    this.logger.debug(
+      `Fetching notifications — userId: ${userId}, unreadOnly: ${unreadOnly ?? false}, page: ${page}, limit: ${limit}`,
+    );
+
     const where = {
       userId,
       ...(unreadOnly ? { isRead: false } : {}),

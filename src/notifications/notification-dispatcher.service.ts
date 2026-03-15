@@ -49,11 +49,12 @@ export class NotificationDispatcherService {
       where: { id: userId },
       select: {
         telegramChatId: true,
-        mobileNo: true,
         pushTokens: {
-          
           select: { token: true },
         },
+        // mobile_no lives on the profile tables, not t_users
+        member:      { select: { mobileNo: true } },
+        staffProfile: { select: { mobileNo: true } },
       },
     });
 
@@ -96,13 +97,27 @@ export class NotificationDispatcherService {
       );
     }
 
-    if (isCritical && this.sms.isEnabled() && user.mobileNo) {
+    const mobileNo = user.member?.mobileNo ?? user.staffProfile?.mobileNo ?? null;
+    let smsQueued = false;
+    if (isCritical && this.sms.isEnabled() && mobileNo) {
       await this.queue.add(
         JOB_SMS_FALLBACK,
-        { notificationId, userId, title, body, phone: user.mobileNo },
+        { notificationId, userId, title, body, phone: mobileNo },
         { delay: this.SMS_DELAY_MS, attempts: 2, backoff: { type: 'fixed', delay: 60_000 } },
       );
+      smsQueued = true;
     }
+
+    // Delivery summary
+    const telegramQueued = !telegramSent && !!user.telegramChatId && this.telegram.isEnabled();
+    const channels: string[] = [];
+    if (fcmSent)        channels.push(`FCM(${fcmTokens.length} token${fcmTokens.length !== 1 ? 's' : ''})`);
+    if (telegramSent)   channels.push('Telegram(immediate)');
+    if (telegramQueued) channels.push('Telegram(queued)');
+    if (smsQueued)      channels.push('SMS(queued)');
+    this.logger.debug(
+      `Notification ${notificationId} delivered — channels: ${channels.length ? channels.join(', ') : 'none'}`,
+    );
   }
 
   async broadcast(
@@ -159,10 +174,20 @@ export class NotificationDispatcherService {
     });
 
     const jobs = await this.queue.getJobs(['delayed', 'waiting']);
+    let cancelled = 0;
     for (const job of jobs) {
       if (job.data?.notificationId === notificationId) {
         await job.remove();
+        cancelled++;
       }
     }
+
+    if (cancelled > 0) {
+      this.logger.debug(
+        `Cancelled ${cancelled} pending fallback job(s) for notification: ${notificationId}`,
+      );
+    }
+
+    this.logger.debug(`Notification marked read — id: ${notificationId}`);
   }
 }

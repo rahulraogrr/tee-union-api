@@ -219,6 +219,10 @@ export class TicketsService {
     const limit = clampLimit(filters.limit);
     const skip = (page - 1) * limit;
 
+    this.logger.debug(
+      `Listing tickets — userId: ${userId}, role: ${role}, status: ${status ?? 'all'}, page: ${page}, limit: ${limit}`,
+    );
+
     let memberWhere = {};
     if (role === UserRole.member) {
       const member = await this.prisma.member.findUnique({
@@ -251,6 +255,7 @@ export class TicketsService {
       this.prisma.ticket.count({ where }),
     ]);
 
+    this.logger.debug(`Tickets listed — total: ${total}, returned: ${data.length}`);
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
@@ -268,6 +273,8 @@ export class TicketsService {
    * @throws ForbiddenException when a member attempts to view another member's ticket
    */
   async findOne(id: string, userId: string, role: UserRole) {
+    this.logger.debug(`Fetching ticket — id: ${id}, userId: ${userId}, role: ${role}`);
+
     const ticket = await this.prisma.ticket.findUnique({
       where: { id },
       include: {
@@ -283,9 +290,15 @@ export class TicketsService {
       },
     });
 
-    if (!ticket) throw new NotFoundException(`Ticket ${id} not found`);
+    if (!ticket) {
+      this.logger.warn(`Ticket not found — id: ${id}`);
+      throw new NotFoundException(`Ticket ${id} not found`);
+    }
 
     if (role === UserRole.member && ticket.member.userId !== userId) {
+      this.logger.warn(
+        `Ticket access denied — userId: ${userId} attempted to access ticket: ${id} owned by userId: ${ticket.member.userId}`,
+      );
       throw new ForbiddenException('Access denied');
     }
 
