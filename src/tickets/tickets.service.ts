@@ -32,7 +32,9 @@ export class TicketsService {
   // ---------------------------------------------------------------------------
   /**
    * Raises a new grievance ticket on behalf of a member.
-   * Calculates the SLA deadline from the priority and dispatches an acknowledgement notification.
+   * Calculates the SLA deadline from the priority, auto-assigns a rep using
+   * load-balanced selection (fewest active tickets in the same work unit),
+   * and dispatches acknowledgement notifications.
    *
    * @param userId - Authenticated member's user ID
    * @param dto    - Ticket data (title, description, categoryId, priority)
@@ -59,6 +61,14 @@ export class TicketsService {
     const slaDeadline = new Date();
     slaDeadline.setDate(slaDeadline.getDate() + SLA_DAYS[priority]);
 
+    // Auto-assign the least-loaded rep in the same work unit (or district fallback)
+    const assignedRepId = await this.autoAssignRep(member.workUnitId, member.districtId);
+    if (assignedRepId) {
+      this.logger.log(`Auto-assigned rep — repId: ${assignedRepId}, workUnitId: ${member.workUnitId}, districtId: ${member.districtId}`);
+    } else {
+      this.logger.warn(`No rep available for workUnitId: ${member.workUnitId}, districtId: ${member.districtId} — ticket will be unassigned`);
+    }
+
     const ticket = await this.prisma.ticket.create({
       data: {
         memberId: member.id,
@@ -70,14 +80,17 @@ export class TicketsService {
         districtId: member.districtId,
         workUnitId: member.workUnitId,
         slaDeadline,
+        assignedRepId: assignedRepId ?? undefined,
       },
       include: {
         category: { select: { name: true } },
+        assignedRep: { select: { id: true, employeeId: true } },
       },
     });
 
-    this.logger.log(`Ticket created — id: ${ticket.id}, priority: ${priority}, memberId: ${member.id}`);
+    this.logger.log(`Ticket created — id: ${ticket.id}, priority: ${priority}, memberId: ${member.id}, assignedRepId: ${assignedRepId ?? 'unassigned'}`);
 
+    // Notify the member: acknowledgement
     await this.notifyUser(userId, {
       notificationType: NotificationType.ticket_update,
       referenceId: ticket.id,
@@ -85,7 +98,105 @@ export class TicketsService {
       body: `Your ticket "${ticket.title}" (#${ticket.id.slice(-6).toUpperCase()}) has been received and will be reviewed shortly.`,
     });
 
+    // Notify the assigned rep
+    if (assignedRepId) {
+      await this.notifyUser(assignedRepId, {
+        notificationType: NotificationType.ticket_update,
+        referenceId: ticket.id,
+        title: 'New Ticket Assigned',
+        body: `A new ${priority} priority ticket "${ticket.title}" has been assigned to you.`,
+        isUrgent: priority === TicketPriority.urgent,
+        isCritical: priority === TicketPriority.critical,
+      });
+    }
+
     return ticket;
+  }
+
+  // ---------------------------------------------------------------------------
+  // AUTO-ASSIGN REP (private)
+  // ---------------------------------------------------------------------------
+  /**
+   * Finds the least-loaded rep whose own member profile is in the same work unit
+   * as the ticket, falling back to district-level reps if none match the work unit.
+   *
+   * No manual rep-assignment table needed — a rep's coverage area is simply their
+   * own work unit / district from their member profile. When a user is promoted to
+   * the rep role their existing member location automatically makes them eligible
+   * for tickets from that area.
+   *
+   * Load = number of tickets in open / in_progress / escalated status.
+   * Tiebreaker: rep whose member record was created earliest (most senior).
+   *
+   * @param workUnitId  - The work unit the ticket belongs to (may be null)
+   * @param districtId  - The district the ticket belongs to (fallback scope)
+   * @returns userId of the chosen rep, or null if no rep is available
+   */
+  private async autoAssignRep(
+    workUnitId: string | null,
+    districtId: string | null,
+  ): Promise<string | null> {
+    // Build scopes to try in order: work-unit first, then district fallback
+    const scopes: { workUnitId?: string; districtId?: string }[] = [];
+    if (workUnitId) scopes.push({ workUnitId });
+    if (districtId) scopes.push({ districtId });
+
+    for (const scope of scopes) {
+      // Find active reps whose member profile is in this work unit / district
+      const reps = await this.prisma.member.findMany({
+        where: {
+          isActive: true,
+          ...(scope.workUnitId
+            ? { workUnitId: scope.workUnitId }
+            : { districtId: scope.districtId }),
+          user: { role: UserRole.rep },
+        },
+        select: {
+          userId: true,
+          memberSince: true, // seniority tiebreaker
+        },
+        orderBy: { memberSince: 'asc' },
+      });
+
+      if (reps.length === 0) continue;
+
+      const repIds = reps.map((r) => r.userId);
+
+      // Count active (non-terminal) tickets per rep
+      const activeCounts = await this.prisma.ticket.groupBy({
+        by: ['assignedRepId'],
+        where: {
+          assignedRepId: { in: repIds },
+          status: { in: [TicketStatus.open, TicketStatus.in_progress, TicketStatus.escalated] },
+        },
+        _count: { assignedRepId: true },
+      });
+
+      // Build load map — default 0 for reps with no active tickets yet
+      const loadMap = new Map<string, number>(repIds.map((id) => [id, 0]));
+      for (const row of activeCounts) {
+        if (row.assignedRepId) loadMap.set(row.assignedRepId, row._count.assignedRepId);
+      }
+
+      // Pick rep with lowest load (tiebreak: first in reps array = most senior member)
+      let bestRepId = repIds[0];
+      let bestLoad  = loadMap.get(repIds[0]) ?? 0;
+      for (const repId of repIds) {
+        const load = loadMap.get(repId) ?? 0;
+        if (load < bestLoad) {
+          bestLoad  = load;
+          bestRepId = repId;
+        }
+      }
+
+      this.logger.debug(
+        `autoAssignRep — scope: ${JSON.stringify(scope)}, candidates: ${repIds.length}, chosen: ${bestRepId} (load: ${bestLoad})`,
+      );
+
+      return bestRepId;
+    }
+
+    return null; // no active reps found in work unit or district
   }
 
   // ---------------------------------------------------------------------------
@@ -133,6 +244,7 @@ export class TicketsService {
         include: {
           member: { select: { fullName: true, employeeId: true } },
           category: { select: { name: true } },
+          assignedRep: { select: { id: true, employeeId: true } },
         },
         orderBy: { createdAt: 'desc' },
       }),
@@ -161,6 +273,7 @@ export class TicketsService {
       include: {
         member: { select: { fullName: true, employeeId: true, userId: true } },
         category: { select: { name: true } },
+        assignedRep: { select: { id: true, employeeId: true } },
         comments: {
           where: role === UserRole.member ? { isInternal: false } : {},
           include: { user: { select: { employeeId: true, role: true } } },
