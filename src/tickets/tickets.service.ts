@@ -246,7 +246,7 @@ export class TicketsService {
         skip,
         take: limit,
         include: {
-          member: { select: { fullName: true, employeeId: true } },
+          member: { select: { fullName: true, user: { select: { employeeId: true } } } },
           category: { select: { name: true } },
           assignedRep: { select: { id: true, employeeId: true } },
         },
@@ -278,7 +278,7 @@ export class TicketsService {
     const ticket = await this.prisma.ticket.findUnique({
       where: { id },
       include: {
-        member: { select: { fullName: true, employeeId: true, userId: true } },
+        member: { select: { fullName: true, userId: true, user: { select: { employeeId: true } } } },
         category: { select: { name: true } },
         assignedRep: { select: { id: true, employeeId: true } },
         comments: {
