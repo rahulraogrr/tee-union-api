@@ -114,7 +114,7 @@ export class MembersService {
         designation: true,
         district: true,
         workUnit: true,
-        user: { select: { employeeId: true, email: true, mobileNo: true, role: true, isActive: true } },
+        user: { select: { employeeId: true, email: true, role: true, isActive: true } },
         memberDesignationHistories: {
           include: {
             designation: { select: { name: true } },

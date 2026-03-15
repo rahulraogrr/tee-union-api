@@ -173,7 +173,7 @@ INSERT INTO t_work_units (id, district_id, name, unit_type) VALUES
 
 -- EMP-MEMBER → member role → TSSPDCL, Lineman, Hyderabad
 INSERT INTO t_members (
-  id, user_id, union_id, employee_id,
+  id, user_id, union_id,
   employer_id, designation_id,
   full_name, district_id,
   member_since, mobile_no,
@@ -183,13 +183,12 @@ SELECT
   gen_random_uuid(),
   u.id,
   (SELECT id FROM t_union WHERE short_name = 'TEE 1104'' UNION'),
-  u.employee_id,
   (SELECT id FROM t_employers WHERE short_name = 'TSSPDCL'),
   (SELECT id FROM t_designations WHERE name = 'Lineman'),
   'Test Member',
   (SELECT id FROM t_districts WHERE name = 'Hyderabad'),
   '2020-01-01',
-  u.mobile_no,
+  '9000000001',
   true,
   false
 FROM t_users u
@@ -198,7 +197,7 @@ ON CONFLICT (user_id) DO NOTHING;
 
 -- EMP-REP → rep role → TSNPDCL, Junior Engineer, Karimnagar
 INSERT INTO t_members (
-  id, user_id, union_id, employee_id,
+  id, user_id, union_id,
   employer_id, designation_id,
   full_name, district_id,
   member_since, mobile_no,
@@ -208,13 +207,12 @@ SELECT
   gen_random_uuid(),
   u.id,
   (SELECT id FROM t_union WHERE short_name = 'TEE 1104'' UNION'),
-  u.employee_id,
   (SELECT id FROM t_employers WHERE short_name = 'TSNPDCL'),
   (SELECT id FROM t_designations WHERE name = 'Junior Engineer'),
   'Test Rep',
   (SELECT id FROM t_districts WHERE name = 'Karimnagar'),
   '2018-06-01',
-  u.mobile_no,
+  '9000000002',
   true,
   false
 FROM t_users u
@@ -223,7 +221,7 @@ ON CONFLICT (user_id) DO NOTHING;
 
 -- EMP-ZONAL → zonal_officer role → TSTRANSCO, Assistant Engineer, Warangal Urban
 INSERT INTO t_members (
-  id, user_id, union_id, employee_id,
+  id, user_id, union_id,
   employer_id, designation_id,
   full_name, district_id,
   member_since, mobile_no,
@@ -233,13 +231,12 @@ SELECT
   gen_random_uuid(),
   u.id,
   (SELECT id FROM t_union WHERE short_name = 'TEE 1104'' UNION'),
-  u.employee_id,
   (SELECT id FROM t_employers WHERE short_name = 'TSTRANSCO'),
   (SELECT id FROM t_designations WHERE name = 'Assistant Engineer'),
   'Test Zonal Officer',
   (SELECT id FROM t_districts WHERE name = 'Warangal Urban'),
   '2015-03-15',
-  u.mobile_no,
+  '9000000003',
   true,
   false
 FROM t_users u
@@ -248,7 +245,7 @@ ON CONFLICT (user_id) DO NOTHING;
 
 -- EMP-ADMIN → admin role → TSGENCO, Sub Engineer, Nizamabad
 INSERT INTO t_members (
-  id, user_id, union_id, employee_id,
+  id, user_id, union_id,
   employer_id, designation_id,
   full_name, district_id,
   member_since, mobile_no,
@@ -258,13 +255,12 @@ SELECT
   gen_random_uuid(),
   u.id,
   (SELECT id FROM t_union WHERE short_name = 'TEE 1104'' UNION'),
-  u.employee_id,
   (SELECT id FROM t_employers WHERE short_name = 'TSGENCO'),
   (SELECT id FROM t_designations WHERE name = 'Sub Engineer'),
   'Test Admin',
   (SELECT id FROM t_districts WHERE name = 'Nizamabad'),
   '2012-07-01',
-  u.mobile_no,
+  '9000000004',
   true,
   false
 FROM t_users u
@@ -273,7 +269,7 @@ ON CONFLICT (user_id) DO NOTHING;
 
 -- EMP-SUPERADMIN → super_admin role → TSGENCO, Assistant Engineer, Hyderabad
 INSERT INTO t_members (
-  id, user_id, union_id, employee_id,
+  id, user_id, union_id,
   employer_id, designation_id,
   full_name, district_id,
   member_since, mobile_no,
@@ -283,13 +279,12 @@ SELECT
   gen_random_uuid(),
   u.id,
   (SELECT id FROM t_union WHERE short_name = 'TEE 1104'' UNION'),
-  u.employee_id,
   (SELECT id FROM t_employers WHERE short_name = 'TSGENCO'),
   (SELECT id FROM t_designations WHERE name = 'Assistant Engineer'),
   'Test Super Admin',
   (SELECT id FROM t_districts WHERE name = 'Hyderabad'),
   '2010-01-01',
-  u.mobile_no,
+  '9000000005',
   true,
   false
 FROM t_users u

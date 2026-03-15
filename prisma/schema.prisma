@@ -240,7 +240,6 @@ model Employer {
 model User {
   id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   employeeId       String    @unique @map("employee_id") @db.VarChar(50)
-  mobileNo         String    @map("mobile_no") @db.VarChar(15)
   email            String?   @db.VarChar(150)
   pinHash          String    @map("pin_hash") @db.VarChar(255)
   oneTimePinHash   String?   @map("one_time_pin_hash") @db.VarChar(255)
@@ -310,7 +309,6 @@ model Member {
   id                      String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId                  String             @unique @map("user_id") @db.Uuid
   unionId                 String             @map("union_id") @db.Uuid
-  employeeId              String             @map("employee_id") @db.VarChar(50)
   employerId              String             @map("employer_id") @db.Uuid
   designationId           String             @map("designation_id") @db.Uuid
   fullName                String             @map("full_name") @db.VarChar(200)
@@ -374,6 +372,10 @@ model MemberDesignationHistory {
   @@map("t_member_designation_history")
 }
 
+// NOTE: t_rep_assignments is reserved for future admin-managed territory overrides.
+// Currently UNUSED — rep coverage is derived automatically from t_members.workUnitId
+// and t_members.districtId (where user.role = rep). Do not populate this table
+// until a UI for manual rep territory management is built.
 model RepAssignment {
   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId       String   @map("user_id") @db.Uuid
@@ -439,6 +441,7 @@ model Ticket {
   @@index([assignedZonalOfficerId])
   @@index([slaDeadline])
   @@index([districtId])
+  @@index([workUnitId])
   @@index([createdAt])
   @@map("t_tickets")
 }
@@ -562,6 +565,7 @@ model Notification {
   @@index([userId, isRead])
   @@index([sentAt])
   @@index([fcmSent, isRead, sentAt])
+  @@index([referenceId])
   @@map("t_notifications")
 }
 
@@ -599,7 +603,7 @@ model NotificationJob {
 model PushToken {
   id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId     String       @map("user_id") @db.Uuid
-  token      String       @db.Text
+  token      String       @unique @db.Text
   platform   PlatformType
   createdAt  DateTime     @default(now()) @map("created_at")
   lastUsedAt DateTime?    @map("last_used_at")
