@@ -32,7 +32,7 @@ const mockTicket = {
   status: TicketStatus.open,
   priority: TicketPriority.standard,
   memberId: 'member-1',
-  member: { userId: 'user-1', fullName: 'Test', employeeId: 'EMP-001' },
+  member: { userId: 'user-1', firstName: 'Test', middleName: null, lastName: 'User', user: { employeeId: 'EMP-001' } },
   category: { name: 'General' },
 };
 
@@ -146,7 +146,7 @@ describe('TicketsService', () => {
     it('throws ForbiddenException when member accesses another member ticket', async () => {
       mockPrisma.ticket.findUnique.mockResolvedValue({
         ...mockTicket,
-        member: { userId: 'other-user', fullName: 'Other', employeeId: 'EMP-002' },
+        member: { userId: 'other-user', firstName: 'Other', middleName: null, lastName: 'Member', user: { employeeId: 'EMP-002' } },
       });
       await expect(service.findOne('ticket-1', 'user-1', UserRole.member))
         .rejects.toThrow(ForbiddenException);

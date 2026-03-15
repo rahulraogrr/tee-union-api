@@ -87,7 +87,7 @@ export class MembersService {
           district: { select: { name: true } },
           workUnit: { select: { name: true } },
         },
-        orderBy: { fullName: 'asc' },
+        orderBy: { lastName: 'asc' },
       }),
       this.prisma.member.count({ where }),
     ]);

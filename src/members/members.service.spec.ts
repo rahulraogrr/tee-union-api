@@ -17,7 +17,9 @@ const mockPrisma = {
 const mockMember = {
   id: 'member-1',
   userId: 'user-1',
-  fullName: 'Test Member',
+  firstName: 'Test',
+  middleName: null,
+  lastName: 'Member',
   employeeId: 'EMP-001',
   isActive: true,
 };

@@ -175,7 +175,7 @@ INSERT INTO t_work_units (id, district_id, name, unit_type) VALUES
 INSERT INTO t_members (
   id, user_id, union_id,
   employer_id, designation_id,
-  full_name, district_id,
+  first_name, middle_name, last_name, district_id,
   member_since, mobile_no,
   is_active, profile_complete
 )
@@ -185,7 +185,7 @@ SELECT
   (SELECT id FROM t_union WHERE short_name = 'TEE 1104'' UNION'),
   (SELECT id FROM t_employers WHERE short_name = 'TSSPDCL'),
   (SELECT id FROM t_designations WHERE name = 'Lineman'),
-  'Test Member',
+  'Test', NULL, 'Member',
   (SELECT id FROM t_districts WHERE name = 'Hyderabad'),
   '2020-01-01',
   '9000000001',
@@ -199,7 +199,7 @@ ON CONFLICT (user_id) DO NOTHING;
 INSERT INTO t_members (
   id, user_id, union_id,
   employer_id, designation_id,
-  full_name, district_id,
+  first_name, middle_name, last_name, district_id,
   member_since, mobile_no,
   is_active, profile_complete
 )
@@ -209,7 +209,7 @@ SELECT
   (SELECT id FROM t_union WHERE short_name = 'TEE 1104'' UNION'),
   (SELECT id FROM t_employers WHERE short_name = 'TSNPDCL'),
   (SELECT id FROM t_designations WHERE name = 'Junior Engineer'),
-  'Test Rep',
+  'Test', NULL, 'Rep',
   (SELECT id FROM t_districts WHERE name = 'Karimnagar'),
   '2018-06-01',
   '9000000002',
@@ -223,7 +223,7 @@ ON CONFLICT (user_id) DO NOTHING;
 INSERT INTO t_members (
   id, user_id, union_id,
   employer_id, designation_id,
-  full_name, district_id,
+  first_name, middle_name, last_name, district_id,
   member_since, mobile_no,
   is_active, profile_complete
 )
@@ -233,7 +233,7 @@ SELECT
   (SELECT id FROM t_union WHERE short_name = 'TEE 1104'' UNION'),
   (SELECT id FROM t_employers WHERE short_name = 'TSTRANSCO'),
   (SELECT id FROM t_designations WHERE name = 'Assistant Engineer'),
-  'Test Zonal Officer',
+  'Test', 'Zonal', 'Officer',
   (SELECT id FROM t_districts WHERE name = 'Warangal Urban'),
   '2015-03-15',
   '9000000003',
@@ -247,7 +247,7 @@ ON CONFLICT (user_id) DO NOTHING;
 INSERT INTO t_members (
   id, user_id, union_id,
   employer_id, designation_id,
-  full_name, district_id,
+  first_name, middle_name, last_name, district_id,
   member_since, mobile_no,
   is_active, profile_complete
 )
@@ -257,7 +257,7 @@ SELECT
   (SELECT id FROM t_union WHERE short_name = 'TEE 1104'' UNION'),
   (SELECT id FROM t_employers WHERE short_name = 'TSGENCO'),
   (SELECT id FROM t_designations WHERE name = 'Sub Engineer'),
-  'Test Admin',
+  'Test', NULL, 'Admin',
   (SELECT id FROM t_districts WHERE name = 'Nizamabad'),
   '2012-07-01',
   '9000000004',
@@ -271,7 +271,7 @@ ON CONFLICT (user_id) DO NOTHING;
 INSERT INTO t_members (
   id, user_id, union_id,
   employer_id, designation_id,
-  full_name, district_id,
+  first_name, middle_name, last_name, district_id,
   member_since, mobile_no,
   is_active, profile_complete
 )
@@ -281,7 +281,7 @@ SELECT
   (SELECT id FROM t_union WHERE short_name = 'TEE 1104'' UNION'),
   (SELECT id FROM t_employers WHERE short_name = 'TSGENCO'),
   (SELECT id FROM t_designations WHERE name = 'Assistant Engineer'),
-  'Test Super Admin',
+  'Test', 'Super', 'Admin',
   (SELECT id FROM t_districts WHERE name = 'Hyderabad'),
   '2010-01-01',
   '9000000005',

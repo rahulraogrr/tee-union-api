@@ -53,8 +53,14 @@ export class MemberSummaryDto {
   @ApiProperty({ example: 'PILOT-0001' })
   employeeId: string;
 
-  @ApiProperty({ example: 'Ravi Kumar' })
-  fullName: string;
+  @ApiProperty({ example: 'Ravi' })
+  firstName: string;
+
+  @ApiPropertyOptional({ example: 'Prasad' })
+  middleName?: string;
+
+  @ApiProperty({ example: 'Kumar' })
+  lastName: string;
 
   @ApiProperty({ example: 'Hyderabad' })
   district: string;
