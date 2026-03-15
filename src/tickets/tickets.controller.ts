@@ -72,6 +72,24 @@ export class TicketsController {
   }
 
   /**
+   * Returns the count of tickets per status, scoped to the caller's role.
+   * Members see only their own; reps see assigned; admins see all.
+   * Replaces 5 separate status-filtered calls in the mobile app's TicketsHomeScreen.
+   */
+  @Get('counts')
+  @ApiOperation({
+    summary: 'Get ticket counts by status (scoped by role)',
+    description: "Returns {open, in_progress, escalated, resolved, closed} counts. Scope matches the caller's role.",
+  })
+  @ApiOkResponse({ description: 'Counts per status: {open, in_progress, escalated, resolved, closed}' })
+  getCounts(
+    @CurrentUser('id')   userId: string,
+    @CurrentUser('role') role: UserRole,
+  ) {
+    return this.ticketsService.getCounts(userId, role);
+  }
+
+  /**
    * Returns full ticket details including all public comments and status history.
    * Members can only access their own tickets.
    */

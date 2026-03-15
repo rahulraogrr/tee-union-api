@@ -260,6 +260,48 @@ export class TicketsService {
   }
 
   // ---------------------------------------------------------------------------
+  // GET TICKET COUNTS BY STATUS (scoped by role)
+  // ---------------------------------------------------------------------------
+  /**
+   * Returns the count of tickets per status, scoped to the caller's role.
+   * Members see only their own; reps see assigned; admins see all.
+   * Used by the TicketsHomeScreen to avoid 5 separate API calls.
+   *
+   * @param userId - Authenticated user's ID
+   * @param role   - Caller's role (determines scope)
+   */
+  async getCounts(userId: string, role: UserRole): Promise<Record<string, number>> {
+    this.logger.debug(`getCounts — userId: ${userId}, role: ${role}`);
+
+    let where: Record<string, any> = {};
+    if (role === UserRole.member) {
+      const member = await this.prisma.member.findUnique({
+        where: { userId },
+        select: { id: true },
+      });
+      where = { memberId: member?.id };
+    } else if (role === UserRole.rep) {
+      where = { assignedRepId: userId };
+    }
+
+    const rows = await this.prisma.ticket.groupBy({
+      by: ['status'],
+      where,
+      _count: { status: true },
+    });
+
+    const counts: Record<string, number> = {
+      open: 0, in_progress: 0, escalated: 0, resolved: 0, closed: 0,
+    };
+    for (const row of rows) {
+      counts[row.status] = row._count.status;
+    }
+
+    this.logger.debug(`getCounts result — ${JSON.stringify(counts)}`);
+    return counts;
+  }
+
+  // ---------------------------------------------------------------------------
   // GET ONE TICKET
   // ---------------------------------------------------------------------------
   /**
