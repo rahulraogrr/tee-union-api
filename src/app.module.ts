@@ -9,6 +9,7 @@ import { HttpLoggerMiddleware } from './common/middleware/http-logger.middleware
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 
 import { PrismaModule } from './prisma/prisma.module';
+import { RedisModule } from './redis/redis.module';
 import { AuthModule } from './auth/auth.module';
 import { MembersModule } from './members/members.module';
 import { TicketsModule } from './tickets/tickets.module';
@@ -50,7 +51,12 @@ const envValidationSchema = Joi.object({
 
   // Telegram — optional
   TELEGRAM_BOT_TOKEN: Joi.string().optional().allow(''),
-  TELEGRAM_WEBHOOK_SECRET: Joi.string().optional().allow(''),
+  // SECURITY (OWASP A04): Webhook secret should always be set when bot token is configured
+  TELEGRAM_WEBHOOK_SECRET: Joi.string().when('TELEGRAM_BOT_TOKEN', {
+    is: Joi.string().min(1),
+    then: Joi.string().min(16).required(),
+    otherwise: Joi.string().optional().allow(''),
+  }),
 
   // AWS SNS — optional
   AWS_REGION: Joi.string().optional().allow(''),
@@ -92,6 +98,9 @@ const envValidationSchema = Joi.object({
 
     // Database
     PrismaModule,
+
+    // Redis — global service for token blacklist + account lockout (OWASP A07)
+    RedisModule,
 
     // Feature modules
     AuthModule,

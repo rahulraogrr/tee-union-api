@@ -13,17 +13,17 @@ async function bootstrap() {
   });
 
   const logger = new Logger('Bootstrap');
+  const isProduction = process.env.NODE_ENV === 'production';
 
   // ── Graceful shutdown ─────────────────────────────────────────────────────
   // Allows OnModuleDestroy hooks (e.g. Prisma.$disconnect) to run cleanly
   app.enableShutdownHooks();
 
   // ── Security headers (Helmet) ─────────────────────────────────────────────
-  // Sets X-Frame-Options, X-Content-Type-Options, CSP, etc.
-  // Note: Disable contentSecurityPolicy for Swagger UI in development
+  // CSP is enabled in production; disabled in dev so Swagger UI loads correctly
   app.use(
     helmet({
-      contentSecurityPolicy: process.env.NODE_ENV === 'production',
+      contentSecurityPolicy: isProduction,
     }),
   );
 
@@ -34,16 +34,25 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
 
   // ── CORS ──────────────────────────────────────────────────────────────────
-  // In production, replace '*' with your app's domain / bundle ID origin
+  // SECURITY (OWASP A05): Never fall back to wildcard '*' in production.
+  // CORS_ORIGINS must be explicitly set to a comma-separated list of allowed origins.
+  if (isProduction && !process.env.CORS_ORIGINS) {
+    throw new Error(
+      '[SECURITY] CORS_ORIGINS env var is required in production. ' +
+      'Set it to a comma-separated list of allowed origins (e.g. "https://yourdomain.com").',
+    );
+  }
+
   const allowedOrigins = process.env.CORS_ORIGINS
-    ? process.env.CORS_ORIGINS.split(',')
-    : '*';
+    ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim())
+    : ['http://localhost:3000', 'http://localhost:8081']; // dev-only safe defaults
 
   app.enableCors({
     origin: allowedOrigins,
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
     exposedHeaders: ['X-Request-Id'],
+    credentials: true,
   });
 
   // ── Validation pipe (class-validator) ─────────────────────────────────────
@@ -57,34 +66,40 @@ async function bootstrap() {
   );
 
   // ── Swagger / OpenAPI ──────────────────────────────────────────────────────
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('TEE 1104 Union API')
-    .setDescription(
-      'NestJS + Prisma + PostgreSQL backend for the TEE 1104 Union mobile app.\n\n' +
-      '**Authentication:** Employee ID + 4-digit PIN → JWT Bearer token.\n\n' +
-      'All endpoints (except `POST /auth/login` and `POST /telegram/webhook`) require ' +
-      'a valid `Authorization: Bearer <token>` header.',
-    )
-    .setVersion('1.0')
-    .addBearerAuth(
-      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT', in: 'header' },
-      'bearer',
-    )
-    .addTag('Auth',          'Login and PIN management')
-    .addTag('Members',       'Member profiles and directory')
-    .addTag('Tickets',       'Grievance ticketing system')
-    .addTag('News',          'Union news and announcements')
-    .addTag('Events',        'Union events and registrations')
-    .addTag('Notifications', 'In-app notification inbox')
-    .addTag('Telegram',      'Telegram bot account linking')
-    .addTag('Push Tokens',   'FCM device token registration')
-    .addTag('Health',        'Liveness and readiness probes')
-    .build();
+  // SECURITY (OWASP A05): Swagger is disabled in production to avoid exposing
+  // the full API surface to attackers. Set ENABLE_SWAGGER=true to force-enable.
+  const swaggerEnabled = !isProduction || process.env.ENABLE_SWAGGER === 'true';
 
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, document, {
-    swaggerOptions: { persistAuthorization: true },
-  });
+  if (swaggerEnabled) {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('TEE 1104 Union API')
+      .setDescription(
+        'NestJS + Prisma + PostgreSQL backend for the TEE 1104 Union mobile app.\n\n' +
+        '**Authentication:** Employee ID + 4-digit PIN → JWT Bearer token.\n\n' +
+        'All endpoints (except `POST /auth/login` and `POST /telegram/webhook`) require ' +
+        'a valid `Authorization: Bearer <token>` header.',
+      )
+      .setVersion('1.0')
+      .addBearerAuth(
+        { type: 'http', scheme: 'bearer', bearerFormat: 'JWT', in: 'header' },
+        'bearer',
+      )
+      .addTag('Auth',          'Login and PIN management')
+      .addTag('Members',       'Member profiles and directory')
+      .addTag('Tickets',       'Grievance ticketing system')
+      .addTag('News',          'Union news and announcements')
+      .addTag('Events',        'Union events and registrations')
+      .addTag('Notifications', 'In-app notification inbox')
+      .addTag('Telegram',      'Telegram bot account linking')
+      .addTag('Push Tokens',   'FCM device token registration')
+      .addTag('Health',        'Liveness and readiness probes')
+      .build();
+
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('api/docs', app, document, {
+      swaggerOptions: { persistAuthorization: true },
+    });
+  }
 
   // ── Start server ───────────────────────────────────────────────────────────
   const port = process.env.PORT ?? 3000;
@@ -92,9 +107,9 @@ async function bootstrap() {
   await app.listen(port);
 
   logger.log(`TEE 1104 Union API  →  http://localhost:${port}/api/v1`);
-  logger.log(`Swagger docs        →  http://localhost:${port}/api/docs`);
+  logger.log(`Swagger docs        →  ${swaggerEnabled ? `http://localhost:${port}/api/docs` : 'DISABLED (production)'}`);
   logger.log(`Environment         →  ${env}`);
-  logger.log(`CORS origins        →  ${process.env.CORS_ORIGINS ?? '*'}`);
+  logger.log(`CORS origins        →  ${allowedOrigins.join(', ')}`);
   logger.log(
     `Integrations        →  ` +
     `FCM: ${process.env.FCM_PROJECT_ID ? '✅' : '⚠️ disabled'}  ` +
