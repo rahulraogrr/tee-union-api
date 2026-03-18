@@ -119,7 +119,7 @@ async function bootstrap() {
   logger.log(`TEE 1104 Union API  →  http://localhost:${port}/api/v1`);
   logger.log(`Swagger docs        →  ${swaggerEnabled ? `http://localhost:${port}/api/docs` : 'DISABLED (production)'}`);
   logger.log(`Environment         →  ${env}`);
-  logger.log(`CORS origins        →  ${allowedOrigins.join(', ')}`);
+  logger.log(`CORS origins        →  ${Array.isArray(allowedOrigins) ? allowedOrigins.join(', ') : allowedOrigins}`);
   logger.log(
     `Integrations        →  ` +
     `FCM: ${process.env.FCM_PROJECT_ID ? '✅' : '⚠️ disabled'}  ` +
