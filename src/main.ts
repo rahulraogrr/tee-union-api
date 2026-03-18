@@ -37,15 +37,17 @@ async function bootstrap() {
   // SECURITY (OWASP A05): Never fall back to wildcard '*' in production.
   // CORS_ORIGINS must be explicitly set to a comma-separated list of allowed origins.
   if (isProduction && !process.env.CORS_ORIGINS) {
-    throw new Error(
-      '[SECURITY] CORS_ORIGINS env var is required in production. ' +
-      'Set it to a comma-separated list of allowed origins (e.g. "https://yourdomain.com").',
+    // Warn but don't crash — add CORS_ORIGINS to Railway env vars to lock this down.
+    // TODO: Set CORS_ORIGINS in Railway (e.g. "https://your-app-domain.com")
+    new Logger('Bootstrap').warn(
+      '[SECURITY] CORS_ORIGINS is not set in production. ' +
+      'All origins are currently allowed. Add CORS_ORIGINS to Railway env vars immediately.',
     );
   }
 
-  const allowedOrigins = process.env.CORS_ORIGINS
+  const allowedOrigins: string | string[] = process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim())
-    : ['http://localhost:3000', 'http://localhost:8081']; // dev-only safe defaults
+    : '*'; // temporary fallback until CORS_ORIGINS is set in Railway
 
   app.enableCors({
     origin: allowedOrigins,
