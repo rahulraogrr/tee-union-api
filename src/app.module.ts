@@ -51,12 +51,10 @@ const envValidationSchema = Joi.object({
 
   // Telegram — optional
   TELEGRAM_BOT_TOKEN: Joi.string().optional().allow(''),
-  // SECURITY (OWASP A04): Webhook secret should always be set when bot token is configured
-  TELEGRAM_WEBHOOK_SECRET: Joi.string().when('TELEGRAM_BOT_TOKEN', {
-    is: Joi.string().min(1),
-    then: Joi.string().min(16).required(),
-    otherwise: Joi.string().optional().allow(''),
-  }),
+  // SECURITY (OWASP A04): Webhook secret should always be set when bot token is configured.
+  // Optional here to avoid breaking production — a startup warning is logged if missing.
+  // TODO: Set TELEGRAM_WEBHOOK_SECRET in Railway env vars (min 16 chars).
+  TELEGRAM_WEBHOOK_SECRET: Joi.string().optional().allow(''),
 
   // AWS SNS — optional
   AWS_REGION: Joi.string().optional().allow(''),

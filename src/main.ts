@@ -101,6 +101,14 @@ async function bootstrap() {
     });
   }
 
+  // ── Security warnings ─────────────────────────────────────────────────────
+  if (process.env.TELEGRAM_BOT_TOKEN && !process.env.TELEGRAM_WEBHOOK_SECRET) {
+    logger.warn(
+      '[SECURITY] TELEGRAM_BOT_TOKEN is set but TELEGRAM_WEBHOOK_SECRET is missing. ' +
+      'Add TELEGRAM_WEBHOOK_SECRET (min 16 chars) in Railway env vars to secure the webhook.',
+    );
+  }
+
   // ── Start server ───────────────────────────────────────────────────────────
   const port = process.env.PORT ?? 3000;
   const env  = process.env.NODE_ENV ?? 'development';
