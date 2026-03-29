@@ -24,7 +24,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       password: this.config.get<string>('REDIS_PASSWORD') || undefined,
       lazyConnect: true,
       enableReadyCheck: false,
-      maxRetriesPerRequest: null,
+      maxRetriesPerRequest: 0,   // fail fast — don't hang login when Redis is down
+      connectTimeout: 2000,      // 2 s connection timeout
+      commandTimeout: 1000,      // 1 s per-command timeout
     });
 
     this.client.on('error', (err) => {
