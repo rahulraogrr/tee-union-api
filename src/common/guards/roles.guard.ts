@@ -19,11 +19,12 @@ export class RolesGuard implements CanActivate {
 
     const req = context.switchToHttp().getRequest<Request & { id?: string }>();
     const { user } = req as any;
-    const hasRole = requiredRoles.includes(user?.role);
+    const userRoles: string[] = user?.roles ?? [];
+    const hasRole = requiredRoles.some(r => userRoles.includes(r));
 
     if (!hasRole) {
       this.logger.warn(
-        `Role access denied — userId: ${user?.id ?? '?'}, role: ${user?.role ?? '?'}, ` +
+        `Role access denied — userId: ${user?.id ?? '?'}, roles: [${userRoles.join(', ')}], ` +
         `required: [${requiredRoles.join(', ')}], ` +
         `route: ${req.method} ${req.url}` +
         (req.id ? ` [${req.id}]` : ''),

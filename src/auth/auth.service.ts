@@ -49,6 +49,7 @@ export class AuthService {
 
     const user = await this.prisma.user.findUnique({
       where: { employeeId: dto.employeeId },
+      include: { member: { select: { firstName: true, lastName: true } } },
     });
 
     if (!user || !user.isActive) {
@@ -78,16 +79,16 @@ export class AuthService {
 
     const isFirstLogin = !!user.oneTimePinHash;
     this.logger.log(
-      `Login success — employeeId: ${user.employeeId}, role: ${user.role}` +
+      `Login success — employeeId: ${user.employeeId}, roles: [${user.roles.join(', ')}]` +
         (isFirstLogin ? ' [first login]' : ''),
     );
 
-    const { token } = this.signToken(user.id, user.employeeId, user.role);
+    const { token } = this.signToken(user.id, user.employeeId, user.roles);
 
     return {
       accessToken:       token,
       requiresPinChange: !user.isPinChanged,
-      role:              user.role,
+      roles:             user.roles,
       employeeId:        user.employeeId,
     };
   }
@@ -157,10 +158,10 @@ export class AuthService {
    * Signs a JWT with a 2-hour expiry.
    * Includes a `jti` (JWT ID) unique per-token for revocation support.
    */
-  signToken(userId: string, employeeId: string, role: string): { token: string; jti: string } {
+  signToken(userId: string, employeeId: string, roles: string[]): { token: string; jti: string } {
     const jti   = `${userId}-${Date.now()}`;
     const token = this.jwt.sign(
-      { sub: userId, employeeId, role, jti },
+      { sub: userId, employeeId, roles, jti },
       { expiresIn: JWT_EXPIRY },
     );
     return { token, jti };

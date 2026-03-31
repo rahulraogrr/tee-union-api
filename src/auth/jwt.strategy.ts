@@ -21,7 +21,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { sub: string; employeeId: string; role: string; jti?: string; exp: number }) {
+  async validate(payload: { sub: string; employeeId: string; roles: string[]; jti?: string; exp: number }) {
     // ── Token blacklist check (OWASP A07 — revocation support) ──────────────
     if (payload.jti && await this.redis.isTokenBlacklisted(payload.jti)) {
       this.logger.warn(`JWT rejected — blacklisted token jti: ${payload.jti}`);
@@ -34,7 +34,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       select: {
         id:           true,
         employeeId:   true,
-        role:         true,
+        roles:        true,
         isActive:     true,
         isPinChanged: true,
       },
