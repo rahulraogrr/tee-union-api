@@ -4,6 +4,38 @@ import { NotificationDispatcherService } from '../notifications/notification-dis
 import { TicketPriority, TicketStatus, UserRole, NotificationType } from '@prisma/client';
 import { clampLimit } from '../common/utils/pagination';
 
+/** Roles that grant elevated (non-member-only) access */
+const ELEVATED_ROLES: UserRole[] = [
+  UserRole.admin,
+  UserRole.super_admin,
+  UserRole.zonal_officer,
+  UserRole.rep,
+];
+
+const ADMIN_ROLES: UserRole[] = [
+  UserRole.admin,
+  UserRole.super_admin,
+  UserRole.zonal_officer,
+];
+
+const SUPER_ADMIN_ROLES: UserRole[] = [
+  UserRole.admin,
+  UserRole.super_admin,
+];
+
+/** Returns true when the user holds at least one elevated role (not member-only). */
+function hasElevatedRole(roles: UserRole[]) {
+  return roles.some(r => ELEVATED_ROLES.includes(r));
+}
+
+function hasAdminRole(roles: UserRole[]) {
+  return roles.some(r => ADMIN_ROLES.includes(r));
+}
+
+function hasSuperAdminRole(roles: UserRole[]) {
+  return roles.some(r => SUPER_ADMIN_ROLES.includes(r));
+}
+
 const SLA_DAYS: Record<TicketPriority, number> = {
   standard: 30,
   urgent: 10,
@@ -224,7 +256,7 @@ export class TicketsService {
     );
 
     let memberWhere = {};
-    if (roles.includes(UserRole.member) && !roles.some(r => [UserRole.admin, UserRole.super_admin, UserRole.zonal_officer].includes(r))) {
+    if (roles.includes(UserRole.member) && !hasAdminRole(roles)) {
       const member = await this.prisma.member.findUnique({
         where: { userId },
         select: { id: true },
@@ -232,7 +264,7 @@ export class TicketsService {
       memberWhere = { memberId: member?.id };
     }
 
-    const repWhere = roles.includes(UserRole.rep) && !roles.some(r => [UserRole.admin, UserRole.super_admin].includes(r))
+    const repWhere = roles.includes(UserRole.rep) && !hasSuperAdminRole(roles)
       ? { assignedRepId: userId }
       : {};
 
@@ -275,7 +307,7 @@ export class TicketsService {
   async getCounts(userId: string, roles: UserRole[]): Promise<Record<string, number>> {
     this.logger.debug(`getCounts — userId: ${userId}, roles: [${roles.join(', ')}]`);
 
-    const isAdmin = roles.some(r => [UserRole.admin, UserRole.super_admin, UserRole.zonal_officer].includes(r));
+    const isAdmin = hasAdminRole(roles);
     let where: Record<string, any> = {};
     if (!isAdmin && roles.includes(UserRole.member)) {
       const member = await this.prisma.member.findUnique({
@@ -320,8 +352,7 @@ export class TicketsService {
   async findOne(id: string, userId: string, roles: UserRole[]) {
     this.logger.debug(`Fetching ticket — id: ${id}, userId: ${userId}, roles: [${roles.join(', ')}]`);
 
-    const isMemberOnly = roles.includes(UserRole.member) &&
-      !roles.some(r => [UserRole.admin, UserRole.super_admin, UserRole.zonal_officer, UserRole.rep].includes(r));
+    const isMemberOnly = roles.includes(UserRole.member) && !hasElevatedRole(roles);
 
     const ticket = await this.prisma.ticket.findUnique({
       where: { id },
@@ -375,8 +406,7 @@ export class TicketsService {
     comment: string,
     isInternal = false,
   ) {
-    const isMemberOnly = roles.includes(UserRole.member) &&
-      !roles.some(r => [UserRole.admin, UserRole.super_admin, UserRole.zonal_officer, UserRole.rep].includes(r));
+    const isMemberOnly = roles.includes(UserRole.member) && !hasElevatedRole(roles);
 
     if (isInternal && isMemberOnly) {
       throw new ForbiddenException('Members cannot post internal comments');
