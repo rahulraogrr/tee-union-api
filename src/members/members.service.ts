@@ -30,7 +30,7 @@ export class MembersService {
         designation: { select: { id: true, name: true } },
         district: { select: { id: true, name: true } },
         workUnit: { select: { id: true, name: true, unitType: true } },
-        user: { select: { employeeId: true, email: true, role: true, lastLoginAt: true } },
+        user: { select: { employeeId: true, email: true, roles: true, lastLoginAt: true } },
       },
     });
 
@@ -114,7 +114,7 @@ export class MembersService {
         designation: true,
         district: true,
         workUnit: true,
-        user: { select: { employeeId: true, email: true, role: true, isActive: true } },
+        user: { select: { employeeId: true, email: true, roles: true, isActive: true } },
         memberDesignationHistories: {
           include: {
             designation: { select: { name: true } },

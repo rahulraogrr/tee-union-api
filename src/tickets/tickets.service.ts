@@ -149,7 +149,7 @@ export class TicketsService {
           ...(scope.workUnitId
             ? { workUnitId: scope.workUnitId }
             : { districtId: scope.districtId }),
-          user: { role: UserRole.rep },
+          user: { roles: { has: UserRole.rep } },
         },
         select: {
           userId: true,
@@ -212,7 +212,7 @@ export class TicketsService {
    */
   async findAll(
     userId: string,
-    role: UserRole,
+    roles: UserRole[],
     filters: { status?: TicketStatus; page?: number; limit?: number },
   ) {
     const { status, page = 1 } = filters;
@@ -220,11 +220,11 @@ export class TicketsService {
     const skip = (page - 1) * limit;
 
     this.logger.debug(
-      `Listing tickets — userId: ${userId}, role: ${role}, status: ${status ?? 'all'}, page: ${page}, limit: ${limit}`,
+      `Listing tickets — userId: ${userId}, roles: [${roles.join(', ')}], status: ${status ?? 'all'}, page: ${page}, limit: ${limit}`,
     );
 
     let memberWhere = {};
-    if (role === UserRole.member) {
+    if (roles.includes(UserRole.member) && !roles.some(r => [UserRole.admin, UserRole.super_admin, UserRole.zonal_officer].includes(r))) {
       const member = await this.prisma.member.findUnique({
         where: { userId },
         select: { id: true },
@@ -232,7 +232,9 @@ export class TicketsService {
       memberWhere = { memberId: member?.id };
     }
 
-    const repWhere = role === UserRole.rep ? { assignedRepId: userId } : {};
+    const repWhere = roles.includes(UserRole.rep) && !roles.some(r => [UserRole.admin, UserRole.super_admin].includes(r))
+      ? { assignedRepId: userId }
+      : {};
 
     const where = {
       ...memberWhere,
@@ -270,17 +272,18 @@ export class TicketsService {
    * @param userId - Authenticated user's ID
    * @param role   - Caller's role (determines scope)
    */
-  async getCounts(userId: string, role: UserRole): Promise<Record<string, number>> {
-    this.logger.debug(`getCounts — userId: ${userId}, role: ${role}`);
+  async getCounts(userId: string, roles: UserRole[]): Promise<Record<string, number>> {
+    this.logger.debug(`getCounts — userId: ${userId}, roles: [${roles.join(', ')}]`);
 
+    const isAdmin = roles.some(r => [UserRole.admin, UserRole.super_admin, UserRole.zonal_officer].includes(r));
     let where: Record<string, any> = {};
-    if (role === UserRole.member) {
+    if (!isAdmin && roles.includes(UserRole.member)) {
       const member = await this.prisma.member.findUnique({
         where: { userId },
         select: { id: true },
       });
       where = { memberId: member?.id };
-    } else if (role === UserRole.rep) {
+    } else if (!isAdmin && roles.includes(UserRole.rep)) {
       where = { assignedRepId: userId };
     }
 
@@ -314,8 +317,11 @@ export class TicketsService {
    * @throws NotFoundException  when the ticket does not exist
    * @throws ForbiddenException when a member attempts to view another member's ticket
    */
-  async findOne(id: string, userId: string, role: UserRole) {
-    this.logger.debug(`Fetching ticket — id: ${id}, userId: ${userId}, role: ${role}`);
+  async findOne(id: string, userId: string, roles: UserRole[]) {
+    this.logger.debug(`Fetching ticket — id: ${id}, userId: ${userId}, roles: [${roles.join(', ')}]`);
+
+    const isMemberOnly = roles.includes(UserRole.member) &&
+      !roles.some(r => [UserRole.admin, UserRole.super_admin, UserRole.zonal_officer, UserRole.rep].includes(r));
 
     const ticket = await this.prisma.ticket.findUnique({
       where: { id },
@@ -324,8 +330,8 @@ export class TicketsService {
         category: { select: { name: true } },
         assignedRep: { select: { id: true, employeeId: true } },
         comments: {
-          where: role === UserRole.member ? { isInternal: false } : {},
-          include: { user: { select: { employeeId: true, role: true } } },
+          where: isMemberOnly ? { isInternal: false } : {},
+          include: { user: { select: { employeeId: true, roles: true } } },
           orderBy: { createdAt: 'asc' },
         },
         statusHistory: { orderBy: { changedAt: 'desc' } },
@@ -337,7 +343,7 @@ export class TicketsService {
       throw new NotFoundException(`Ticket ${id} not found`);
     }
 
-    if (role === UserRole.member && ticket.member.userId !== userId) {
+    if (isMemberOnly && ticket.member.userId !== userId) {
       this.logger.warn(
         `Ticket access denied — userId: ${userId} attempted to access ticket: ${id} owned by userId: ${ticket.member.userId}`,
       );
@@ -357,7 +363,7 @@ export class TicketsService {
    *
    * @param ticketId   - Ticket UUID
    * @param userId     - Commenter's user ID
-   * @param role       - Commenter's role
+   * @param roles      - Commenter's roles array
    * @param comment    - Comment text
    * @param isInternal - If true, hidden from the ticket owner (default: false)
    * @throws ForbiddenException when a member attempts to post an internal comment
@@ -365,11 +371,14 @@ export class TicketsService {
   async addComment(
     ticketId: string,
     userId: string,
-    role: UserRole,
+    roles: UserRole[],
     comment: string,
     isInternal = false,
   ) {
-    if (isInternal && role === UserRole.member) {
+    const isMemberOnly = roles.includes(UserRole.member) &&
+      !roles.some(r => [UserRole.admin, UserRole.super_admin, UserRole.zonal_officer, UserRole.rep].includes(r));
+
+    if (isInternal && isMemberOnly) {
       throw new ForbiddenException('Members cannot post internal comments');
     }
 
@@ -383,11 +392,11 @@ export class TicketsService {
     });
 
     this.logger.log(
-      `Comment added — ticketId: ${ticketId}, role: ${role}, internal: ${isInternal}`,
+      `Comment added — ticketId: ${ticketId}, roles: [${roles.join(', ')}], internal: ${isInternal}`,
     );
 
     // Notify the ticket owner when a rep/admin adds a public comment
-    if (!isInternal && role !== UserRole.member) {
+    if (!isInternal && !isMemberOnly) {
       const ownerId = result.ticket.member.userId;
       if (ownerId && ownerId !== userId) {
         await this.notifyUser(ownerId, {

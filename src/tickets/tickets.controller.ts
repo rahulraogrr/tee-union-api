@@ -60,11 +60,11 @@ export class TicketsController {
   @ApiQuery({ name: 'page',   required: false, type: Number, description: 'Page number (default: 1)' })
   @ApiQuery({ name: 'limit',  required: false, type: Number, description: 'Results per page (default: 20)' })
   findAll(
-    @CurrentUser('id')   userId: string,
-    @CurrentUser('role') role: UserRole,
+    @CurrentUser('id')    userId: string,
+    @CurrentUser('roles') roles: UserRole[],
     @Query() query: any,
   ) {
-    return this.ticketsService.findAll(userId, role, {
+    return this.ticketsService.findAll(userId, roles, {
       status: query.status,
       page:   query.page  ? +query.page  : 1,
       limit:  query.limit ? +query.limit : 20,
@@ -83,10 +83,10 @@ export class TicketsController {
   })
   @ApiOkResponse({ description: 'Counts per status: {open, in_progress, escalated, resolved, closed}' })
   getCounts(
-    @CurrentUser('id')   userId: string,
-    @CurrentUser('role') role: UserRole,
+    @CurrentUser('id')    userId: string,
+    @CurrentUser('roles') roles: UserRole[],
   ) {
-    return this.ticketsService.getCounts(userId, role);
+    return this.ticketsService.getCounts(userId, roles);
   }
 
   /**
@@ -106,10 +106,10 @@ export class TicketsController {
   @ApiForbiddenResponse({ description: 'Member attempted to view another member\'s ticket' })
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser('id')   userId: string,
-    @CurrentUser('role') role: UserRole,
+    @CurrentUser('id')    userId: string,
+    @CurrentUser('roles') roles: UserRole[],
   ) {
-    return this.ticketsService.findOne(id, userId, role);
+    return this.ticketsService.findOne(id, userId, roles);
   }
 
   /**
@@ -130,11 +130,11 @@ export class TicketsController {
   @ApiForbiddenResponse({ description: 'Members cannot post internal comments' })
   addComment(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser('id')   userId: string,
-    @CurrentUser('role') role: UserRole,
+    @CurrentUser('id')    userId: string,
+    @CurrentUser('roles') roles: UserRole[],
     @Body() body: AddCommentDto,
   ) {
-    return this.ticketsService.addComment(id, userId, role, body.comment, body.isInternal);
+    return this.ticketsService.addComment(id, userId, roles, body.comment, body.isInternal);
   }
 
   /**
